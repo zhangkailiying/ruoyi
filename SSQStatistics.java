@@ -1,21 +1,17 @@
-package com.ruoyi.web.controller.common;
+package com.ruoyi.project.system.domain.entity;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.ruoyi.common.utils.StringUtils;
-import org.apache.commons.compress.utils.Lists;
+
+import com.ruoyi.project.system.entityVo.Lottery;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
-import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.List;
 
 public class SSQStatistics {
     /**
@@ -43,129 +39,69 @@ public class SSQStatistics {
         return null;
     }
     //
-    public static List<String> historyList() {
-        List<String> list = Lists.newArrayList();
-//        Document doc = getDocument("https://m.zhuying.com/fc3d/jhfx");
-        Document doc = getDocument("https://www.sporttery.cn/jc/zqsgkj/");
-        //https://www.sporttery.cn/jc/zqsgkj/
+    public static List<Lottery> getLotterys(String startDate, String endDate) {
+        String URL="https://webapi.sporttery.cn/gateway/jc/football/getMatchResultV1.qry?matchPage=1";
+        URL+=("&matchBeginDate="+startDate);
+        URL+=("&matchEndDate="+endDate);
+        URL+=("&leagueId=&pageSize=500&pageNo=1&isFix=0&pcOrWap=1");
+        Document doc = getDocument(URL);
         JSONObject object = JSONObject.parseObject(doc.body().text());
-        System.out.println(object);
+        JSONObject object1 = JSONObject.parseObject(object.get("value").toString());
+        List<Lottery> list=JSONObject.parseArray(object1.get("matchResult").toString(),Lottery.class);
         return list;
     }
 
-    public static void main(String[] args) throws SQLException {
-        Document doc = getDocument("https://webapi.sporttery.cn/gateway/jc/football/getMatchResultV1.qry?matchPage=1&matchBeginDate=2024-11-25&matchEndDate=2024-11-27&leagueId=&pageSize=100&pageNo=1&isFix=0&pcOrWap=1");
-        //https://www.sporttery.cn/jc/zqsgkj/
-     JSONObject object = JSONObject.parseObject(doc.body().text());
-     JSONObject object1 = JSONObject.parseObject(object.get("value").toString());
+    public static void saveBatchLotterys( List<Lottery> list) {
 
-     List<Lottery> list=JSONObject.parseArray(object1.get("matchResult").toString(),Lottery.class);
+        String url = "jdbc:mysql://cd-cdb-mksu3lvw.sql.tencentcdb.com:27330/ruoyi?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8";
+        String user = "root";
+        String password = "Zk5213344";
+        Connection conn = null;
+        String sql = "INSERT INTO tb_football(sectionsNo999,goalLine,leagueName,sectionsNo1,leagueBackColor,winFlag,a,d,h,allHomeTeam,allAwayTeam,matchDate,matchNumStr,awayTeamId,homeTeamId,leagueId) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        //历史奖地址 https://m.zhuying.com/api/lotapi/selectListV2
+        try {
+            //加载jdbc驱动
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            //连接mysql
+            try {
+                conn = DriverManager.getConnection(url, user, password);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            //将自动提交关闭
+            conn.setAutoCommit(false);
+            //编写sql
+            PreparedStatement pstm = conn.prepareStatement(sql);
 
-        list.stream().forEach(lottery -> {
-            System.out.println(lottery);
-        });
-
-//        String url = "jdbc:mysql://cd-cdb-mksu3lvw.sql.tencentcdb.com:27330/ruoyi?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8";
-//        String user = "root";
-//        String password = "He_ni3314";
-//        Connection conn = null;
-//        String sql = "INSERT INTO tb_football(`sectionsNo999`,`goalLine`,`leagueName`,`sectionsNo1`,`leagueBackColor`,`winFlag`,`a`,`d`,`h`,'allHomeTeam','allAwayTeam','matchDate','matchNumStr','awayTeamId','homeTeamId','leagueId','common') VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-//        //历史奖地址 https://m.zhuying.com/api/lotapi/selectListV2
-//        try {
-//            //加载jdbc驱动
-//            Class.forName("com.mysql.cj.jdbc.Driver");
-//            //连接mysql
-//            try {
-//                conn = DriverManager.getConnection(url, user, password);
-//            } catch (SQLException e) {
-//                throw new RuntimeException(e);
-//            }
-//            //将自动提交关闭
-//            conn.setAutoCommit(false);
-//            //编写sql
-//            PreparedStatement pstm = conn.prepareStatement(sql);
-//
-//            Document doc = getDocument("https://webapi.sporttery.cn/gateway/jc/football/getMatchResultV1.qry?matchPage=1&matchBeginDate=2024-11-25&matchEndDate=2024-11-27&leagueId=&pageSize=100&pageNo=1&isFix=0&pcOrWap=1");
-//            //https://www.sporttery.cn/jc/zqsgkj/
-//            JSONObject object = JSONObject.parseObject(doc.body().text());
-//            JSONObject object1 = JSONObject.parseObject(object.get("value").toString());
-//            System.out.println(object1.get("matchResult"));
-//
-//
-//
-//
-//
-////            pstm.setLong(1,qisu );
-////            pstm.setInt(2, kjbai);
-////            pstm.setInt(3, kjshi);
-////            pstm.setInt(4, kjge);
-////            pstm.setString(5, kjbai+""+kjshi+kjge);
-////            pstm.setInt(6, getMaxtoMin(kjbai,kjshi,kjge));
-//
-//
-//
-//
-//            Arrays.stream(qishu.split(",")).sorted(Comparator.reverseOrder()).forEach(i->{
-//
-//                Document doc = getDocument("https://m.zhuying.com/api/lotapi/detail/fc3d/"+i);
-//                JSONObject object = JSONObject.parseObject(doc.body().text());
-//
-//                JSONObject objectDD = JSONObject.parseObject(object.get("data").toString());
-//                // bai shi ge
-//                Long qisu=Long.valueOf(objectDD.get("issue").toString());
-//                System.out.println(qisu);
-//                String [] kaiji=objectDD.get("tryNumbers").toString().split(",");
-//                String [] kaijing=objectDD.get("units").toString().split(",");
-//
-//                Integer kjbai =Integer.valueOf(kaiji[0]);
-//                Integer kjshi =Integer.valueOf(kaiji[1]);
-//                Integer kjge =Integer.valueOf(kaiji[2]);
-//
-//                Integer bai =Integer.valueOf(kaijing[0]);
-//                Integer shi =Integer.valueOf(kaijing[1]);
-//                Integer ge =Integer.valueOf(kaijing[2]);
-//
-//                try {
-//                    Set<Integer> onwtwo=new HashSet<>();
-//                    pstm.setLong(1,qisu );
-//                    pstm.setInt(2, kjbai);
-//                    pstm.setInt(3, kjshi);
-//                    pstm.setInt(4, kjge);
-//                    pstm.setString(5, kjbai+""+kjshi+kjge);
-//                    pstm.setInt(6, getMaxtoMin(kjbai,kjshi,kjge));
-//                    getonwtwo(kjbai,onwtwo);
-//                    getonwtwo(kjshi,onwtwo);
-//                    getonwtwo(kjge,onwtwo);
-//                    pstm.setInt(7, getMaxtoMinSum(kjbai,kjshi,kjge));
-//                    pstm.setString(8, StringUtils.join(onwtwo.toArray(), ","));
-//                    pstm.setInt(9, 0);
-//                    onwtwo.clear();
-//                    pstm.addBatch();
-//                    pstm.setLong(1, qisu);
-//                    pstm.setInt(2, bai);
-//                    pstm.setInt(3, shi);
-//                    pstm.setInt(4, ge);
-//                    pstm.setString(5, bai+""+shi+ge);
-//                    pstm.setInt(6, getMaxtoMin(bai,shi,ge));
-//                    pstm.setInt(7, getMaxtoMinSum(bai,shi,ge));
-//                    getonwtwo(bai,onwtwo);
-//                    getonwtwo(shi,onwtwo);
-//                    getonwtwo(ge,onwtwo);
-//                    pstm.setString(8, StringUtils.join(onwtwo.toArray(), ","));
-//                    pstm.setInt(9, 1);
-//                    onwtwo.clear();
-//                    pstm.addBatch();
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//
-//            });
-//            //添加到同一个批处理
-//            pstm.executeBatch();
-//            conn.commit();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+            list.stream().forEach(lottery -> {
+                try {
+                    pstm.setString(1,lottery.getSectionsNo999());
+                    pstm.setString(2,lottery.getGoalLine().toString());
+                    pstm.setString(3, lottery.getLeagueName());
+                    pstm.setString(4, lottery.getSectionsNo1());
+                    pstm.setString(5, lottery.getLeagueBackColor());
+                    pstm.setString(6, lottery.getWinFlag());
+                    pstm.setString(7, lottery.getA());
+                    pstm.setString(8, lottery.getD());
+                    pstm.setString(9, lottery.getH());
+                    pstm.setString(10, lottery.getAllHomeTeam());
+                    pstm.setString(11, lottery.getAllAwayTeam());
+                    pstm.setString(12, lottery.getMatchDate());
+                    pstm.setString(13, lottery.getMatchNumStr());
+                    pstm.setInt(14, lottery.getAwayTeamId());
+                    pstm.setInt(15, lottery.getHomeTeamId());
+                    pstm.setInt(16, lottery.getLeagueId());
+                    pstm.addBatch();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+            //添加到同一个批处理
+            pstm.executeBatch();
+            conn.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -173,33 +109,19 @@ public class SSQStatistics {
 
 
 
+    public static void main(String[] args) throws SQLException {
 
+       // String URL="https://webapi.sporttery.cn/jc/zqdz/index.html?showType=3&mid=2030237";
+       Document doc = getDocument("https://webapi.sporttery.cn/gateway/jc/football/getFixedBonusV1.qry?clientCode=3001&matchId=2030237");
+        //Document doc = getDocument("https://webapi.sporttery.cn/gateway/jc/football/getMatchResultV1.qry?matchPage=1&matchBeginDate=2025-03-05&matchEndDate=2025-03-07&leagueId=&pageSize=100&pageNo=1&isFix=0&pcOrWap=1");
+        //https://www.sporttery.cn/jc/zqsgkj/
+      //  Document doc = getDocument(URL);
+        JSONObject object = JSONObject.parseObject(doc.body().text());
+        JSONObject object1 = JSONObject.parseObject(object.get("value").toString());
+//
+        System.out.println(object1);
+       // Document doc = getDocument("https://webapi.sporttery.cn/gateway/jc/football/getMatchResultV1.qry?matchPage=1&matchBeginDate=2024-11-25&matchEndDate=2024-11-27&leagueId=&pageSize=100&pageNo=1&isFix=0&pcOrWap=1");
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    }
 
 }
